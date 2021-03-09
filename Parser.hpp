@@ -173,16 +173,17 @@ public:
 
 // NOTE: doesnt work yet
 template <typename A, typename B>
-Parser<pair<A, B>> zip(Parser<A> a, Parser<B> b) {
-  return Parser<pair<A, B>>{
-      [a, b](string_view str) -> std::optional<pair<pair<A, B>, string_view>> {
+Parser<std::tuple<A, B>> zip(Parser<A> a, Parser<B> b) {
+  return Parser<std::tuple<A, B>>{
+      [a, b](string_view str)
+          -> std::optional<pair<std::tuple<A, B>, string_view>> {
         std::optional<pair<A, string_view>> x = a.parse(str);
         if (x.has_value()) {
           std::optional<pair<B, string_view>> y = b.parse(x.value().second);
           if (y.has_value()) {
-            return std::make_optional(
-                std::make_pair(std::make_pair(x.value().first, y.value().first),
-                               y.value().second));
+            return std::make_optional(std::make_pair(
+                std::make_tuple(x.value().first, y.value().first),
+                y.value().second));
           } else {
             return std::nullopt;
           }
@@ -196,13 +197,14 @@ Parser<std::tuple<A, B, C>> zip3(Parser<A> a, Parser<B> b, Parser<C> c) {
   return Parser<std::tuple<A, B, C>>{
       [a, b, c](string_view str)
           -> std::optional<pair<std::tuple<A, B, C>, string_view>> {
-        std::optional<pair<pair<A, B>, string_view>> x = zip(a, b).parse(str);
+        std::optional<pair<std::tuple<A, B>, string_view>> x =
+            zip(a, b).parse(str);
         if (x.has_value()) {
           std::optional<pair<C, string_view>> y = c.parse(x.value().second);
           if (y.has_value()) {
             return std::make_optional(std::make_pair(
-                std::make_tuple(x.value().first.first, x.value().first.second,
-                                y.value().first),
+                std::make_tuple(std::get<0>(x.value().first),
+                                std::get<1>(x.value().first), y.value().first),
                 y.value().second));
           } else {
             return std::nullopt;
@@ -212,6 +214,26 @@ Parser<std::tuple<A, B, C>> zip3(Parser<A> a, Parser<B> b, Parser<C> c) {
         }
       }};
 }
+
+namespace experimental {
+template <typename A, typename B, typename... T>
+auto zipMany(Parser<A> a, Parser<B> b, Parser<T>... parsers) {
+  if constexpr (!is_tuple<A>::value) {
+    auto x = a.andThen(b);
+    std::cout << "More than 2 args no tuple\n";
+    return zipMany(x, std::forward<decltype(parsers)>(parsers)...);
+  } else {
+    auto x = a.andThen(b);
+    std::cout << "More than two , tuple\n";
+    return zipMany(x, std::forward<decltype(parsers)>(parsers)...);
+  }
+}
+
+template <typename A> Parser<A> zipMany(Parser<A> a) {
+  std::cout << "SINGLE\n";
+  return a;
+}
+} // namespace experimental
 
 namespace Parsers { // Parsers::
 Parser<string_view> String(string_view prefix) {

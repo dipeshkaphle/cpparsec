@@ -59,6 +59,15 @@ int main() {
     std::cout << "FAILED F\n";
   }
 
+  auto zipcheck = zip3(Alpha, PosNum, Alpha).parse("a12b");
+  if (zipcheck.has_value()) {
+    std::cout << std::get<0>(zipcheck.value().first)
+              << std::get<1>(zipcheck.value().first)
+              << std::get<2>(zipcheck.value().first) << std::endl;
+  } else {
+    std::cout << "Doesnt work\n";
+  }
+
   auto andThenCheck = Digit.andThen(Alpha).andThen(Digit).parse("1a1");
   if (andThenCheck.has_value()) {
 
