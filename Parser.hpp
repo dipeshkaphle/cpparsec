@@ -16,6 +16,7 @@ using opt_string_view = std::optional<std::string_view>;
 
 template <typename T> class Parser {
 public:
+  std::function<std::optional<pair<T, string_view>>(string_view)> parse;
   Parser() = default;
   Parser(std::function<std::optional<pair<T, string_view>>(string_view)> f) {
     parse = f;
@@ -25,8 +26,15 @@ public:
     this->parse = other.parse;
     return *this;
   }
-
-  std::function<std::optional<pair<T, string_view>>(string_view)> parse;
+  Parser<T> operator||(const Parser<T> &other) {
+    return Parser<T>([other, this_obj = *this](string_view str) {
+      auto x = this_obj.parse(str);
+      if (x.has_value()) {
+        return x;
+      }
+      return other.parse(str);
+    });
+  }
 
   Parser<T> filter(std::function<bool(T)> pred) {
     std::function<std::optional<T>(T)> f =
@@ -143,8 +151,6 @@ Parser<std::tuple<A, B, C>> zip3(Parser<A> a, Parser<B> b, Parser<C> c) {
   return a.andThen(b).andThen(c);
 }
 
-namespace experimental {
-
 // sexy stuff
 // power of templates wow
 template <typename A> Parser<A> zipMany(Parser<A> a) { return a; }
@@ -160,7 +166,14 @@ auto zipMany(Parser<A> a, Parser<B> b, Parser<T>... parsers) {
   }
 }
 
-} // namespace experimental
+template <std::size_t N, typename... T> auto zipAndGet(Parser<T>... parsers) {
+  return zipMany(std::forward<decltype(parsers)>(parsers)...)
+      .map((std::function<std::optional<typename nth_type<N, T...>::Type>(
+                std::tuple<T...>)>)[](const std::tuple<T...> &x)
+               ->std::optional<typename nth_type<N, T...>::Type> {
+                 return std::make_optional(std::get<N>(x));
+               });
+}
 
 namespace Parsers { // Parsers::
 Parser<string_view> String(string_view prefix) {
@@ -181,6 +194,10 @@ Parser<char> Char([](string_view str) {
                      : std::make_optional(make_pair(str[0], str.substr(1)));
 });
 
+Parser<char> Character(char c) {
+  return Char.filter(std::bind1st(std::equal_to<char>(), c));
+}
+
 Parser<char> Alpha = Char.filter([](char c) { return std::isalpha(c) != 0; });
 
 Parser<char> Digit = Char.filter([](char c) { return std::isdigit(c) != 0; });
@@ -199,32 +216,14 @@ Parser<char> Space = Char.filter([](char c) { return c == ' '; });
 Parser<char> NewLine = Char.filter([](char c) { return c == '\n'; });
 
 template <typename T> Parser<T> skipPreWhitespace(const Parser<T> &p) {
-  return Parser<T>{[p](string_view str) {
-    auto x = WhiteSpace.zeroOrMore().parse(str);
-    return p.parse(x.value().second);
-  }};
+  return zipAndGet<1>(WhiteSpace.zeroOrMore(), p);
 }
 template <typename T> Parser<T> skipPostWhitespace(const Parser<T> &p) {
-  return Parser<T>{
-      [p](string_view str) -> std::optional<std::pair<T, string_view>> {
-        auto y = p.parse(str);
-        if (y.has_value()) {
-          auto x = WhiteSpace.zeroOrMore().parse(y.value().second);
-          str = x.value().second;
-          return std::make_optional(std::make_pair(y.value().first, str));
-        }
-        return std::nullopt;
-      }};
+  return zipAndGet<0>(p, WhiteSpace.zeroOrMore());
 }
 
 template <typename T> Parser<T> skipSurrWhitespace(const Parser<T> &p) {
-  return zip3(WhiteSpace.zeroOrMore(), p, WhiteSpace.zeroOrMore())
-      .map((std::function<std::optional<T>(
-                std::tuple<std::vector<char>, T, std::vector<char>>)>)[](
-               const std::tuple<std::vector<char>, T, std::vector<char>> &x)
-               ->std::optional<T> {
-                 return std::make_optional(std::get<1>(x));
-               });
+  return zipAndGet<1>(WhiteSpace.zeroOrMore(), p, WhiteSpace.zeroOrMore());
 }
 
 //
