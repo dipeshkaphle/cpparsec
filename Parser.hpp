@@ -36,8 +36,6 @@ public:
     return map<T>(f);
   }
 
-  // TODO
-  // NOTE: Has a lot of issues i think, oneOrMore doesnt work idk why
   template <typename B> Parser<B> map(std::function<std::optional<B>(T)> f) {
     std::function<Parser<B>(T)> g = [f](const T &match) -> Parser<B> {
       return Parser<B>(
@@ -57,52 +55,33 @@ public:
   }
 
   template <typename B> Parser<B> flatmap(std::function<Parser<B>(T)> f) {
-    return Parser<B>(
-        [f, this](string_view str) -> std::optional<std::pair<B, string_view>> {
-          std::optional<std::pair<T, string_view>> x = this->parse(str);
-          if (not x.has_value()) {
-            return std::nullopt;
-          } else {
-            auto y = x.value().first;
-            Parser<B> p = f(y);
-            return p.parse(x.value().second);
-            // return x.value();
-          }
-        });
-  }
-
-  Parser<std::vector<T>> oneOrMore() {
-    // return this->zeroOrMore().filter(
-    //     [](const std::vector<T> &vec) { return !vec.empty(); });
-    // TODO, not working rn idk why
-    // Parser<std::vector<T>> p = this->zeroOrMore();
-    // return
-    // p.map(std::function<std::optional<std::vector<T>>(std::vector<T>)>(
-    //     [](const std::vector<T> &vec) -> std::optional<std::vector<T>> {
-    //       return vec.empty() ? std::nullopt : std::make_optional(vec);
-    //     }));
-    //
-    return Parser<std::vector<T>>([this](string_view str) {
-      std::vector<T> matches;
-      std::optional<std::pair<T, string_view>> parseRes = this->parse(str);
-      while (parseRes.has_value()) {
-        matches.push_back(parseRes.value().first);
-        str = parseRes.value().second;
-        parseRes = this->parse(str);
+    return Parser<B>([f, this_obj = *this](string_view str)
+                         -> std::optional<std::pair<B, string_view>> {
+      std::optional<std::pair<T, string_view>> x = this_obj.parse(str);
+      if (not x.has_value()) {
+        return std::nullopt;
+      } else {
+        auto y = x.value().first;
+        Parser<B> p = f(y);
+        return p.parse(x.value().second);
+        // return x.value();
       }
-      return matches.empty() ? std::nullopt
-                             : std::make_optional(std::make_pair(matches, str));
     });
   }
 
+  Parser<std::vector<T>> oneOrMore() {
+    return this->zeroOrMore().filter(
+        [](const std::vector<T> &vec) { return !vec.empty(); });
+  }
+
   Parser<std::vector<T>> zeroOrMore() {
-    return Parser<std::vector<T>>([this](string_view str) {
+    return Parser<std::vector<T>>([this_obj = *this](string_view str) {
       std::vector<T> matches;
-      std::optional<std::pair<T, string_view>> parseRes = this->parse(str);
+      std::optional<std::pair<T, string_view>> parseRes = this_obj.parse(str);
       while (parseRes.has_value()) {
         matches.push_back(parseRes.value().first);
         str = parseRes.value().second;
-        parseRes = this->parse(str);
+        parseRes = this_obj.parse(str);
       }
       return std::make_optional(std::make_pair(matches, str));
     });
@@ -112,9 +91,9 @@ public:
   template <typename A> auto andThen(Parser<A> a) {
     if constexpr (!is_tuple<T>::value) {
       return Parser<std::tuple<T, A>>(
-          [this, a](string_view str)
+          [this_obj = *this, a](string_view str)
               -> std::optional<std::pair<std::tuple<T, A>, string_view>> {
-            std::optional<pair<T, string_view>> x = this->parse(str);
+            std::optional<pair<T, string_view>> x = this_obj.parse(str);
             if (x.has_value()) {
               std::optional<pair<A, string_view>> y = a.parse(x.value().second);
               if (y.has_value()) {
@@ -132,9 +111,9 @@ public:
       std::tuple<A> t;
       auto y = std::tuple_cat(x, t);
       return Parser<decltype(y)>{
-          [this, a, y](string_view str)
+          [this_obj = *this, a](string_view str)
               -> std::optional<std::pair<decltype(y), string_view>> {
-            std::optional<pair<T, string_view>> res = this->parse(str);
+            std::optional<pair<T, string_view>> res = this_obj.parse(str);
             if (res.has_value()) {
               std::optional<pair<A, string_view>> res2 =
                   a.parse(res.value().second);
@@ -147,92 +126,38 @@ public:
             }
             return std::nullopt;
           }};
-      // return Parser {};
     }
   }
 
-  // template<> Parser<std::tuple<T>> andThen(){
-  // }
-
-  // NOTE: Doesnt work yet. Some template issue
-  // template <typename B> Parser<pair<T, B>> zip(Parser<B> b) {
-  //   auto g = std::function<Parser<std::pair<T, B>>(T)>([b](T matchT) {
-  //     // return b.map(std::function<std::optional<B> (T)> f);
-  //     std::function<std::optional<std::pair<T, B>>(B)> f =
-  //         ([matchT](B matchB) -> std::optional<std::pair<T, B>> {
-  //           return std::make_optional(std::make_pair(matchT, matchB));
-  //         });
-  //     return b.map(f);
-  //   });
-  //   return this->flatmap(g);
-  // }
-  //
 }; // Parser class end
 
 // helper functions
 
-// NOTE: doesnt work yet
 template <typename A, typename B>
 Parser<std::tuple<A, B>> zip(Parser<A> a, Parser<B> b) {
-  return Parser<std::tuple<A, B>>{
-      [a, b](string_view str)
-          -> std::optional<pair<std::tuple<A, B>, string_view>> {
-        std::optional<pair<A, string_view>> x = a.parse(str);
-        if (x.has_value()) {
-          std::optional<pair<B, string_view>> y = b.parse(x.value().second);
-          if (y.has_value()) {
-            return std::make_optional(std::make_pair(
-                std::make_tuple(x.value().first, y.value().first),
-                y.value().second));
-          } else {
-            return std::nullopt;
-          }
-        } else {
-          return std::nullopt;
-        }
-      }};
+  return a.andThen(b);
 }
+
 template <typename A, typename B, typename C>
 Parser<std::tuple<A, B, C>> zip3(Parser<A> a, Parser<B> b, Parser<C> c) {
-  return Parser<std::tuple<A, B, C>>{
-      [a, b, c](string_view str)
-          -> std::optional<pair<std::tuple<A, B, C>, string_view>> {
-        std::optional<pair<std::tuple<A, B>, string_view>> x =
-            zip(a, b).parse(str);
-        if (x.has_value()) {
-          std::optional<pair<C, string_view>> y = c.parse(x.value().second);
-          if (y.has_value()) {
-            return std::make_optional(std::make_pair(
-                std::make_tuple(std::get<0>(x.value().first),
-                                std::get<1>(x.value().first), y.value().first),
-                y.value().second));
-          } else {
-            return std::nullopt;
-          }
-        } else {
-          return std::nullopt;
-        }
-      }};
+  return a.andThen(b).andThen(c);
 }
 
 namespace experimental {
+
+template <typename A> Parser<A> zipMany(Parser<A> a) { return a; }
+
 template <typename A, typename B, typename... T>
 auto zipMany(Parser<A> a, Parser<B> b, Parser<T>... parsers) {
   if constexpr (!is_tuple<A>::value) {
     auto x = a.andThen(b);
-    std::cout << "More than 2 args no tuple\n";
     return zipMany(x, std::forward<decltype(parsers)>(parsers)...);
   } else {
     auto x = a.andThen(b);
-    std::cout << "More than two , tuple\n";
     return zipMany(x, std::forward<decltype(parsers)>(parsers)...);
   }
 }
 
-template <typename A> Parser<A> zipMany(Parser<A> a) {
-  std::cout << "SINGLE\n";
-  return a;
-}
 } // namespace experimental
 
 namespace Parsers { // Parsers::
@@ -302,16 +227,6 @@ template <typename T> Parser<T> skipSurrWhitespace(Parser<T> p) {
         return std::nullopt;
       }};
 }
-
-// TODO , doesnt work
-// Parser<int> PosNum =
-//     Digit.oneOrMore().map<int>([](std::vector<char> vec) ->
-//     std::optional<int> {
-//       std::string res;
-//       for (char c : vec)
-//         res.push_back(c);
-//       return std::optional(std::stoi(res));
-//     });
 
 //
 Parser<int> PosNum = Parser<int>(

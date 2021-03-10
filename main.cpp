@@ -49,23 +49,38 @@ int main() {
 
   // auto pre = String("Hi").parse("Hilooo");
   //
-  auto pre = zip3(String("Hi"), String("Da"), String("F")).parse("HiDaD");
+  // auto pre = zip(String("Hi"), String("Da")).parse("HiDaD");
+  // const Parser<std::tuple<string_view, string_view>> &manyAndThens =
+  //     String("Hi").andThen(String("Da"));
+  // auto pre = manyAndThens.parse("HiDaD");
+  auto pre =
+      String("Hi").andThen(String("Da")).andThen(String("F")).parse("HiDaD");
   if (pre.has_value()) {
     std::cout << std::get<0>(pre.value().first) << "&"
               << std::get<1>(pre.value().first) << "&"
-              << std::get<2>(pre.value().first) << "||" << pre.value().second
-              << std::endl;
+              << "||" << pre.value().second << std::endl;
   } else {
     std::cout << "FAILED F\n";
   }
 
-  auto zipcheck = zip3(Alpha, PosNum, Alpha).parse("a12b");
+  auto zips = zip3(Alpha, PosNum, Alpha);
+  auto zipcheck = zips.parse("a12b");
   if (zipcheck.has_value()) {
     std::cout << std::get<0>(zipcheck.value().first)
-              << std::get<1>(zipcheck.value().first)
-              << std::get<2>(zipcheck.value().first) << std::endl;
+              << std::get<1>(zipcheck.value().first) << std::endl;
+    // << std::get<2>(zipcheck.value().first) << std::endl;
   } else {
     std::cout << "Doesnt work\n";
+  }
+
+  // Parser<std::tuple<char, char>> alpdi(Alpha.andThen(Digit));
+  Parser<std::tuple<char, char, char, char>> alpdialpdi(
+      Alpha.andThen(Digit).andThen(Alpha).andThen(Digit));
+  auto s = alpdialpdi.parse("a1a2");
+  if (s.has_value()) {
+    std::cout << "Not temp ig\n";
+  } else {
+    std::cout << "Defo temp\n";
   }
 
   auto andThenCheck = Digit.andThen(Alpha).andThen(Digit).parse("1a1");
@@ -94,5 +109,13 @@ int main() {
     std::cout << "WORKS\n" << space.value().first << "\n";
   } else {
     std::cout << "DOESNT WOKR\n";
+  }
+
+  auto zipmanycheck = experimental::zipMany(Alpha, Digit, Alpha, Digit);
+  auto res = zipmanycheck.parse("a1a1");
+  if (res.has_value()) {
+    std::cout << "Has value\n";
+  } else {
+    std::cout << "Oh well\n";
   }
 }
