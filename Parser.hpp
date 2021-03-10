@@ -145,6 +145,8 @@ Parser<std::tuple<A, B, C>> zip3(Parser<A> a, Parser<B> b, Parser<C> c) {
 
 namespace experimental {
 
+// sexy stuff
+// power of templates wow
 template <typename A> Parser<A> zipMany(Parser<A> a) { return a; }
 
 template <typename A, typename B, typename... T>
@@ -174,7 +176,7 @@ Parser<string_view> String(string_view prefix) {
       });
 }
 
-Parser<char> Char = Parser<char>([](string_view str) {
+Parser<char> Char([](string_view str) {
   return str.empty() ? std::nullopt
                      : std::make_optional(make_pair(str[0], str.substr(1)));
 });
@@ -216,16 +218,13 @@ template <typename T> Parser<T> skipPostWhitespace(const Parser<T> &p) {
 }
 
 template <typename T> Parser<T> skipSurrWhitespace(const Parser<T> &p) {
-  return Parser<T>{
-      [p](string_view str) -> std::optional<std::pair<T, string_view>> {
-        auto y = skipPreWhitespace(p).parse(str);
-        if (y.has_value()) {
-          auto z = WhiteSpace.zeroOrMore().parse(y.value().second);
-          return std::make_optional(
-              std::make_pair(y.value().first, z.value().second));
-        }
-        return std::nullopt;
-      }};
+  return zip3(WhiteSpace.zeroOrMore(), p, WhiteSpace.zeroOrMore())
+      .map((std::function<std::optional<T>(
+                std::tuple<std::vector<char>, T, std::vector<char>>)>)[](
+               const std::tuple<std::vector<char>, T, std::vector<char>> &x)
+               ->std::optional<T> {
+                 return std::make_optional(std::get<1>(x));
+               });
 }
 
 //
