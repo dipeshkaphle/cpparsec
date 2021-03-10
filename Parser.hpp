@@ -196,13 +196,13 @@ Parser<char> Tab = Char.filter([](char c) { return c == '\t'; });
 Parser<char> Space = Char.filter([](char c) { return c == ' '; });
 Parser<char> NewLine = Char.filter([](char c) { return c == '\n'; });
 
-template <typename T> Parser<T> skipPreWhitespace(Parser<T> p) {
+template <typename T> Parser<T> skipPreWhitespace(const Parser<T> &p) {
   return Parser<T>{[p](string_view str) {
     auto x = WhiteSpace.zeroOrMore().parse(str);
     return p.parse(x.value().second);
   }};
 }
-template <typename T> Parser<T> skipPostWhitespace(Parser<T> p) {
+template <typename T> Parser<T> skipPostWhitespace(const Parser<T> &p) {
   return Parser<T>{
       [p](string_view str) -> std::optional<std::pair<T, string_view>> {
         auto y = p.parse(str);
@@ -215,7 +215,7 @@ template <typename T> Parser<T> skipPostWhitespace(Parser<T> p) {
       }};
 }
 
-template <typename T> Parser<T> skipSurrWhitespace(Parser<T> p) {
+template <typename T> Parser<T> skipSurrWhitespace(const Parser<T> &p) {
   return Parser<T>{
       [p](string_view str) -> std::optional<std::pair<T, string_view>> {
         auto y = skipPreWhitespace(p).parse(str);
