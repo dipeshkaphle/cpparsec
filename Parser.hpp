@@ -179,6 +179,17 @@ template <typename... T> auto oneOf(Parser<T>... parsers) {
   return (... || parsers);
 }
 
+template <typename T> Parser<bool> Optional(const Parser<T> &parser) {
+  return Parser<bool>([parser](string_view str) {
+    auto x = parser.parse(str);
+    if (x.has_value()) {
+      return std::make_optional(std::make_pair(true, x.value().second));
+    } else {
+      return std::make_optional(std::make_pair(false, str));
+    }
+  });
+}
+
 namespace Parsers { // Parsers::
 Parser<string_view> String(string_view prefix) {
   return Parser<string_view>(

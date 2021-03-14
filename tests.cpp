@@ -66,5 +66,13 @@ int main() {
   auto zipAndGetCheck = zipAndGet<0>(Alpha, Digit).parse("c1");
   assert(zipAndGetCheck.has_value());
 
+  auto OptionalCheck1 = Optional(String("(")).parse("())");
+  assert(OptionalCheck1.value().first == true);
+  assert(OptionalCheck1.value().second == "))");
+
+  auto OptionalCheck2 = Optional(String("(")).parse("}}}");
+  assert(OptionalCheck2.value().first == false);
+  assert(OptionalCheck2.value().second == "}}}");
+
   std::cout << "Passed all tests\n";
 }
