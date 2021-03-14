@@ -1,6 +1,7 @@
 #pragma once
 
 #include "util.cpp"
+
 #include <algorithm>
 #include <functional>
 #include <iostream>
@@ -26,7 +27,7 @@ public:
     this->parse = other.parse;
     return *this;
   }
-  Parser<T> operator||(const Parser<T> &other) {
+  Parser<T> operator||(const Parser<T> &other) const {
     return Parser<T>([other, this_obj = *this](string_view str) {
       auto x = this_obj.parse(str);
       if (x.has_value()) {
@@ -36,7 +37,7 @@ public:
     });
   }
 
-  Parser<T> filter(std::function<bool(T)> pred) {
+  Parser<T> filter(std::function<bool(T)> pred) const {
     std::function<std::optional<T>(T)> f =
         [pred](const T &x) -> std::optional<T> {
       return (pred(x) ? std::make_optional(x) : std::nullopt);
@@ -44,7 +45,8 @@ public:
     return map<T>(f);
   }
 
-  template <typename B> Parser<B> map(std::function<std::optional<B>(T)> f) {
+  template <typename B>
+  Parser<B> map(std::function<std::optional<B>(T)> f) const {
     std::function<Parser<B>(T)> g = [f](const T &match) -> Parser<B> {
       return Parser<B>(
           std::function<std::optional<pair<B, string_view>>(string_view)>(
@@ -62,7 +64,7 @@ public:
     return this->flatmap<B>(g);
   }
 
-  template <typename B> Parser<B> flatmap(std::function<Parser<B>(T)> f) {
+  template <typename B> Parser<B> flatmap(std::function<Parser<B>(T)> f) const {
     return Parser<B>([f, this_obj = *this](string_view str)
                          -> std::optional<std::pair<B, string_view>> {
       std::optional<std::pair<T, string_view>> x = this_obj.parse(str);
@@ -77,12 +79,12 @@ public:
     });
   }
 
-  Parser<std::vector<T>> oneOrMore() {
+  Parser<std::vector<T>> oneOrMore() const {
     return this->zeroOrMore().filter(
         [](const std::vector<T> &vec) { return !vec.empty(); });
   }
 
-  Parser<std::vector<T>> zeroOrMore() {
+  Parser<std::vector<T>> zeroOrMore() const {
     return Parser<std::vector<T>>([this_obj = *this](string_view str) {
       std::vector<T> matches;
       std::optional<std::pair<T, string_view>> parseRes = this_obj.parse(str);
@@ -96,7 +98,7 @@ public:
   }
 
   // If i can make this work then god damnnnnnnn
-  template <typename A> auto andThen(Parser<A> a) {
+  template <typename A> auto andThen(Parser<A> a) const {
     if constexpr (!is_tuple<T>::value) {
       return Parser<std::tuple<T, A>>(
           [this_obj = *this, a](string_view str)
@@ -140,6 +142,8 @@ public:
 }; // Parser class end
 
 // helper functions
+
+namespace Parsers { // Parsers::
 
 template <typename A, typename B>
 Parser<std::tuple<A, B>> zip(Parser<A> a, Parser<B> b) {
@@ -190,7 +194,6 @@ template <typename T> Parser<bool> Optional(const Parser<T> &parser) {
   });
 }
 
-namespace Parsers { // Parsers::
 Parser<string_view> String(string_view prefix) {
   return Parser<string_view>(
       [prefix](string_view str)
@@ -204,31 +207,33 @@ Parser<string_view> String(string_view prefix) {
       });
 }
 
-Parser<char> Char([](string_view str) {
+const Parser<char> Char([](string_view str) {
   return str.empty() ? std::nullopt
                      : std::make_optional(make_pair(str[0], str.substr(1)));
 });
 
-Parser<char> Character(char c) {
+const Parser<char> Character(char c) {
   return Char.filter(std::bind1st(std::equal_to<char>(), c));
 }
 
-Parser<char> Alpha = Char.filter([](char c) { return std::isalpha(c) != 0; });
+const Parser<char> Alpha =
+    Char.filter([](char c) { return std::isalpha(c) != 0; });
 
-Parser<char> Digit = Char.filter([](char c) { return std::isdigit(c) != 0; });
+const Parser<char> Digit =
+    Char.filter([](char c) { return std::isdigit(c) != 0; });
 
-Parser<char> AlphaNum = Char.filter(
+const Parser<char> AlphaNum = Char.filter(
     [](char c) { return (std::isdigit(c) != 0) || (std::isalpha(c) != 0); });
 
-Parser<char> LeftParen = Char.filter([](char c) { return c == '('; });
-Parser<char> RightParen = Char.filter([](char c) { return c == ')'; });
-Parser<char> LeftCurly = Char.filter([](char c) { return c == '{'; });
-Parser<char> RightCurly = Char.filter([](char c) { return c == '}'; });
-Parser<char> WhiteSpace =
+const Parser<char> LeftParen = Char.filter([](char c) { return c == '('; });
+const Parser<char> RightParen = Char.filter([](char c) { return c == ')'; });
+const Parser<char> LeftCurly = Char.filter([](char c) { return c == '{'; });
+const Parser<char> RightCurly = Char.filter([](char c) { return c == '}'; });
+const Parser<char> WhiteSpace =
     Char.filter([](char c) { return c == ' ' || c == '\n' || c == '\t'; });
-Parser<char> Tab = Char.filter([](char c) { return c == '\t'; });
-Parser<char> Space = Char.filter([](char c) { return c == ' '; });
-Parser<char> NewLine = Char.filter([](char c) { return c == '\n'; });
+const Parser<char> Tab = Char.filter([](char c) { return c == '\t'; });
+const Parser<char> Space = Char.filter([](char c) { return c == ' '; });
+const Parser<char> NewLine = Char.filter([](char c) { return c == '\n'; });
 
 template <typename T> Parser<T> skipPreWhitespace(const Parser<T> &p) {
   return zipAndGet<1>(WhiteSpace.zeroOrMore(), p);
@@ -242,7 +247,7 @@ template <typename T> Parser<T> skipSurrWhitespace(const Parser<T> &p) {
 }
 
 //
-Parser<int> PosNum = Parser<int>(
+const Parser<int> PosNum = Parser<int>(
     ([](string_view str) -> std::optional<std::pair<int, string_view>> {
       std::optional<std::pair<std::vector<char>, string_view>> x =
           Digit.oneOrMore().parse(str);
