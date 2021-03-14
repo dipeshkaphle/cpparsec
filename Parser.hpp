@@ -207,33 +207,31 @@ Parser<string_view> String(string_view prefix) {
       });
 }
 
-const Parser<char> Char([](string_view str) {
+Parser<char> Char([](string_view str) {
   return str.empty() ? std::nullopt
                      : std::make_optional(make_pair(str[0], str.substr(1)));
 });
 
-const Parser<char> Character(char c) {
+Parser<char> Character(char c) {
   return Char.filter(std::bind1st(std::equal_to<char>(), c));
 }
 
-const Parser<char> Alpha =
-    Char.filter([](char c) { return std::isalpha(c) != 0; });
+Parser<char> Alpha = Char.filter([](char c) { return std::isalpha(c) != 0; });
 
-const Parser<char> Digit =
-    Char.filter([](char c) { return std::isdigit(c) != 0; });
+Parser<char> Digit = Char.filter([](char c) { return std::isdigit(c) != 0; });
 
-const Parser<char> AlphaNum = Char.filter(
+Parser<char> AlphaNum = Char.filter(
     [](char c) { return (std::isdigit(c) != 0) || (std::isalpha(c) != 0); });
 
-const Parser<char> LeftParen = Char.filter([](char c) { return c == '('; });
-const Parser<char> RightParen = Char.filter([](char c) { return c == ')'; });
-const Parser<char> LeftCurly = Char.filter([](char c) { return c == '{'; });
-const Parser<char> RightCurly = Char.filter([](char c) { return c == '}'; });
-const Parser<char> WhiteSpace =
+Parser<char> LeftParen = Char.filter([](char c) { return c == '('; });
+Parser<char> RightParen = Char.filter([](char c) { return c == ')'; });
+Parser<char> LeftCurly = Char.filter([](char c) { return c == '{'; });
+Parser<char> RightCurly = Char.filter([](char c) { return c == '}'; });
+Parser<char> WhiteSpace =
     Char.filter([](char c) { return c == ' ' || c == '\n' || c == '\t'; });
-const Parser<char> Tab = Char.filter([](char c) { return c == '\t'; });
-const Parser<char> Space = Char.filter([](char c) { return c == ' '; });
-const Parser<char> NewLine = Char.filter([](char c) { return c == '\n'; });
+Parser<char> Tab = Char.filter([](char c) { return c == '\t'; });
+Parser<char> Space = Char.filter([](char c) { return c == ' '; });
+Parser<char> NewLine = Char.filter([](char c) { return c == '\n'; });
 
 template <typename T> Parser<T> skipPreWhitespace(const Parser<T> &p) {
   return zipAndGet<1>(WhiteSpace.zeroOrMore(), p);
@@ -247,7 +245,7 @@ template <typename T> Parser<T> skipSurrWhitespace(const Parser<T> &p) {
 }
 
 //
-const Parser<int> PosNum = Parser<int>(
+Parser<int> PosNum = Parser<int>(
     ([](string_view str) -> std::optional<std::pair<int, string_view>> {
       std::optional<std::pair<std::vector<char>, string_view>> x =
           Digit.oneOrMore().parse(str);
