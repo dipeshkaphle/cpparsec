@@ -74,5 +74,8 @@ int main() {
   assert(OptionalCheck2.value().first == false);
   assert(OptionalCheck2.value().second == "}}}");
 
+  auto char_template_specialization = Optional(Parser('.')).parse(".1");
+  assert(char_template_specialization.has_value());
+
   std::cout << "Passed all tests\n";
 }

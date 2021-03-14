@@ -22,6 +22,7 @@ public:
   Parser(std::function<std::optional<pair<T, string_view>>(string_view)> f) {
     parse = f;
   }
+  Parser(const T &val) = delete;
   Parser<T>(const Parser<T> &other) { this->parse = other.parse; }
   Parser<T> operator=(const Parser<T> &other) {
     this->parse = other.parse;
@@ -141,7 +142,15 @@ public:
 
 }; // Parser class end
 
-// helper functions
+// char template specializtion for Parser
+template <> Parser<char>::Parser(const char &c) {
+  this->parse = ([c](string_view str) {
+    return str.empty() ? std::nullopt
+           : (str[0] == c)
+               ? std::make_optional(make_pair(str[0], str.substr(1)))
+               : std::nullopt;
+  });
+}
 
 namespace Parsers { // Parsers::
 
