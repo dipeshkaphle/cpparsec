@@ -56,6 +56,13 @@ int main() {
   or_check = (Digit || Character('c')).parse("d1");
   assert(not or_check.has_value());
 
+  auto oneOfCheck = oneOf(Digit, Alpha).parse("a1");
+  assert(oneOfCheck.value().first == 'a');
+  auto oneOfCheck2 = oneOf(Digit, Alpha, Character('.')).parse(".a1");
+  assert(oneOfCheck2.value().first == '.');
+  auto oneOfCheck3 = oneOf(Digit, Alpha, Character('.')).parse(" a1");
+  assert(oneOfCheck3.has_value() == false);
+
   auto zipAndGetCheck = zipAndGet<0>(Alpha, Digit).parse("c1");
   assert(zipAndGetCheck.has_value());
 

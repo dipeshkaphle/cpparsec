@@ -175,6 +175,10 @@ template <std::size_t N, typename... T> auto zipAndGet(Parser<T>... parsers) {
                });
 }
 
+template <typename... T> auto oneOf(Parser<T>... parsers) {
+  return (... || parsers);
+}
+
 namespace Parsers { // Parsers::
 Parser<string_view> String(string_view prefix) {
   return Parser<string_view>(
