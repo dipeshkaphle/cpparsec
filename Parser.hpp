@@ -142,6 +142,17 @@ public:
     }
   }
 
+  Parser<bool> orThrow(const char *error_msg) {
+    return Parser<T>([*this, error_msg](string_view str) {
+      auto res = this->parse(str);
+      if (res.has_value()) {
+        return res;
+      } else {
+        throw std::runtime_error(error_msg);
+      }
+    });
+  }
+
 }; // Parser class end
 
 // char template specializtion for Parser
@@ -151,6 +162,19 @@ template <> Parser<char>::Parser(const char &c) {
            : (str[0] == c)
                ? std::make_optional(make_pair(str[0], str.substr(1)))
                : std::nullopt;
+  });
+}
+
+// orThrow specialization for bool types
+// We want it to throw when it returns false
+template <> Parser<bool> Parser<bool>::orThrow(const char *error_msg) {
+  return Parser<bool>([*this, error_msg](string_view str) {
+    auto res = this->parse(str);
+    if (res.value().first) {
+      return res;
+    } else {
+      throw std::runtime_error(error_msg);
+    }
   });
 }
 
