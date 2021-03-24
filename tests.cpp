@@ -82,15 +82,15 @@ int main() {
   excludes1 = Char_excluding(']').parse("Hi");
   assert(excludes1.has_value());
 
-  auto excludes2 = Char_excluding_many({'[', ']'}).parse("[Hi");
+  auto excludes2 = Char_excluding_many(std::array{'[', ']'}).parse("[Hi");
   assert(!excludes2.has_value());
 
   auto end = End.parse("");
   assert(end.value().first);
 
-  auto includes1 = Characters({'a', 'b', 'c'}).parse("ab");
+  auto includes1 = Characters(std::array{'a', 'b', 'c'}).parse("ab");
   assert(includes1.has_value());
-  includes1 = Characters({'a', 'b', 'c'}).parse("db");
+  includes1 = Characters(std::array{'a', 'b', 'c'}).parse("db");
   assert(!includes1.has_value());
 
   // auto error = Character('a').orThrow("Couldnt parse a").parse("bc");

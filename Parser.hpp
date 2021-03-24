@@ -271,10 +271,10 @@ Parser<char> Characters(std::span<char> chars) {
   }
 }
 
-Parser<char> Characters(const std::initializer_list<char> &chars) {
+template <size_t N> Parser<char> Characters(const std::array<char, N> &chars) {
   {
-    return Char.filter([chars](char c) {
-      return std::any_of(chars.begin(), chars.end(),
+    return Char.filter([arr = chars](char c) {
+      return std::any_of(arr.begin(), arr.end(),
                          std::bind1st(std::equal_to<char>(), c));
     });
   }
@@ -291,9 +291,10 @@ Parser<char> Char_excluding_many(std::span<char> chars) {
   });
 }
 
-Parser<char> Char_excluding_many(const std::initializer_list<char> &chars) {
-  return Char.filter([chars](char c) {
-    return std::none_of(chars.begin(), chars.end(),
+template <size_t N>
+Parser<char> Char_excluding_many(const std::array<char, N> &chars) {
+  return Char.filter([arr = chars](char c) {
+    return std::none_of(arr.begin(), arr.end(),
                         std::bind1st(std::equal_to<char>(), c));
   });
 }
