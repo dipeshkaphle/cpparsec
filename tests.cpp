@@ -88,5 +88,10 @@ int main() {
   auto end = End.parse("");
   assert(end.value().first);
 
+  auto includes1 = Characters({'a', 'b', 'c'}).parse("ab");
+  assert(includes1.has_value());
+  includes1 = Characters({'a', 'b', 'c'}).parse("db");
+  assert(!includes1.has_value());
+
   std::cout << "Passed all tests\n";
 }

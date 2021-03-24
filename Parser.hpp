@@ -257,6 +257,24 @@ Parser<char> Character(char c) {
   return Char.filter(std::bind1st(std::equal_to<char>(), c));
 }
 
+Parser<char> Characters(std::span<char> chars) {
+  {
+    return Char.filter([chars](char c) {
+      return std::any_of(chars.begin(), chars.end(),
+                         std::bind1st(std::equal_to<char>(), c));
+    });
+  }
+}
+
+Parser<char> Characters(const std::initializer_list<char> &chars) {
+  {
+    return Char.filter([chars](char c) {
+      return std::any_of(chars.begin(), chars.end(),
+                         std::bind1st(std::equal_to<char>(), c));
+    });
+  }
+}
+
 Parser<char> Char_excluding(char c) {
   return Char.filter(std::bind1st(std::not_equal_to<char>(), c));
 }
