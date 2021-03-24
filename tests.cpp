@@ -77,5 +77,13 @@ int main() {
   auto char_template_specialization = Optional(Parser('.')).parse(".1");
   assert(char_template_specialization.has_value());
 
+  auto excludes1 = Char_excluding(']').parse("]Hi");
+  assert(!excludes1.has_value());
+  excludes1 = Char_excluding(']').parse("Hi");
+  assert(excludes1.has_value());
+
+  auto excludes2 = Char_excluding_many({'[', ']'}).parse("[Hi");
+  assert(!excludes2.has_value());
+
   std::cout << "Passed all tests\n";
 }

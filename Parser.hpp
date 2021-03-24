@@ -6,6 +6,7 @@
 #include <functional>
 #include <iostream>
 #include <optional>
+#include <span>
 #include <string>
 #include <string_view>
 #include <tuple>
@@ -223,6 +224,24 @@ Parser<char> Char([](string_view str) {
 
 Parser<char> Character(char c) {
   return Char.filter(std::bind1st(std::equal_to<char>(), c));
+}
+
+Parser<char> Char_excluding(char c) {
+  return Char.filter(std::bind1st(std::not_equal_to<char>(), c));
+}
+
+Parser<char> Char_excluding_many(std::span<char> chars) {
+  return Char.filter([chars](char c) {
+    return std::none_of(chars.begin(), chars.end(),
+                        std::bind1st(std::equal_to<char>(), c));
+  });
+}
+
+Parser<char> Char_excluding_many(const std::initializer_list<char> &chars) {
+  return Char.filter([chars](char c) {
+    return std::none_of(chars.begin(), chars.end(),
+                        std::bind1st(std::equal_to<char>(), c));
+  });
 }
 
 Parser<char> Alpha = Char.filter([](char c) { return std::isalpha(c) != 0; });
