@@ -230,6 +230,10 @@ template <typename T> Parser<bool> Optional(const Parser<T> &parser) {
   });
 }
 
+template <typename T> inline Parser<bool> Contains(const Parser<T> &parser) {
+  return Optional(parser);
+}
+
 Parser<string_view> String(string_view prefix) {
   return Parser<string_view>(
       [prefix](string_view str)
