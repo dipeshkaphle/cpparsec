@@ -15,6 +15,7 @@
 using std::pair;
 using std::string_view;
 using opt_string_view = std::optional<std::string_view>;
+template <typename T> using Fn = std::function<T>;
 
 template <typename T> class Parser {
 public:
@@ -216,6 +217,12 @@ Parser<string_view> String(string_view prefix) {
         }
       });
 }
+
+Parser<bool>
+    End((Fn<std::optional<std::pair<bool, string_view>>(string_view)>)[](
+        string_view str) {
+      return std::make_optional(std::make_pair(str.empty(), str));
+    });
 
 Parser<char> Char([](string_view str) {
   return str.empty() ? std::nullopt

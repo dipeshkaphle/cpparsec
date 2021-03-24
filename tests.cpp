@@ -85,5 +85,8 @@ int main() {
   auto excludes2 = Char_excluding_many({'[', ']'}).parse("[Hi");
   assert(!excludes2.has_value());
 
+  auto end = End.parse("");
+  assert(end.value().first);
+
   std::cout << "Passed all tests\n";
 }
