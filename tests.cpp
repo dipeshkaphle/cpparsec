@@ -93,5 +93,8 @@ int main() {
   includes1 = Characters({'a', 'b', 'c'}).parse("db");
   assert(!includes1.has_value());
 
+  // auto error = Character('a').orThrow("Couldnt parse a").parse("bc");
+  // assert(!error.has_value());
+
   std::cout << "Passed all tests\n";
 }

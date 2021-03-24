@@ -142,15 +142,16 @@ public:
     }
   }
 
-  Parser<bool> orThrow(const char *error_msg) {
-    return Parser<T>([*this, error_msg](string_view str) {
-      auto res = this->parse(str);
-      if (res.has_value()) {
-        return res;
-      } else {
-        throw std::runtime_error(error_msg);
-      }
-    });
+  Parser<T> orThrow(const char *error_msg) {
+    return Parser<T>((Fn<std::optional<pair<T, string_view>>(string_view)>)
+                         [ error_msg, this_obj = *this ](string_view str) {
+                           auto res = this_obj.parse(str);
+                           if (res.has_value()) {
+                             return res;
+                           } else {
+                             throw std::runtime_error(error_msg);
+                           }
+                         });
   }
 
 }; // Parser class end
