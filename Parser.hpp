@@ -120,12 +120,13 @@ public:
     } else {
       // std::cout << "TUPLEEEEE:" << num_of_template_params<T>::size <<
       // std::endl;
-      auto x = T{};
-      std::tuple<A> t;
-      auto y = std::tuple_cat(x, t);
-      return Parser<decltype(y)>{
+      return Parser<decltype(
+          std::tuple_cat(std::declval<T>(), std::declval<std::tuple<A>>()))>{
           [this_obj = *this, a](string_view str)
-              -> std::optional<std::pair<decltype(y), string_view>> {
+              -> std::optional<std::pair<decltype(std::tuple_cat(
+                                             std::declval<T>(),
+                                             std::declval<std::tuple<A>>())),
+                                         string_view>> {
             std::optional<pair<T, string_view>> res = this_obj.parse(str);
             if (res.has_value()) {
               std::optional<pair<A, string_view>> res2 =
