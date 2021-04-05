@@ -348,4 +348,19 @@ Parser<int> PosNum = Parser<int>(
           std::make_pair(std::stoi(ans), x.value().second));
     }));
 //
+
+template <typename T> Parser<size_t> skipMany(const Parser<T> &parser) {
+  return parser.zeroOrMore().map(Fn<std::optional<size_t>(std::vector<T>)>(
+      [](const std::vector<T> &vec) -> std::optional<size_t> {
+        return std::make_optional(vec.size());
+      }));
+}
+
+template <typename T> Parser<size_t> skipMany1(const Parser<T> &parser) {
+  return parser.oneOrMore().map(Fn<std::optional<size_t>(std::vector<T>)>(
+      [](const std::vector<T> &vec) -> std::optional<size_t> {
+        return std::make_optional(vec.size());
+      }));
+}
+
 } // namespace Parsers

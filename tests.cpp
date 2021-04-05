@@ -96,5 +96,14 @@ int main() {
   // auto error = Character('a').orThrow("Couldnt parse a").parse("bc");
   // assert(!error.has_value());
 
+  auto skipmanycheck = skipMany(WhiteSpace).parse("a");
+  assert(skipmanycheck.value().first == 0);
+  skipmanycheck = skipMany1(WhiteSpace).parse("  a");
+  assert(skipmanycheck.value().first == 2);
+  skipmanycheck = skipMany1(WhiteSpace).parse("a");
+  assert(!skipmanycheck.has_value());
+  skipmanycheck = skipMany(WhiteSpace).parse(" a");
+  assert(skipmanycheck.value().first == 1);
+
   std::cout << "Passed all tests\n";
 }
