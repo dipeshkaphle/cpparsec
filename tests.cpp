@@ -105,5 +105,40 @@ int main() {
   skipmanycheck = skipMany(WhiteSpace).parse(" a");
   assert(skipmanycheck.value().first == 1);
 
+  auto inside_parens = Parens(PosNum).parse("(12)");
+  assert(inside_parens.has_value());
+  assert(inside_parens.value().first == 12);
+  assert(inside_parens.value().second == "");
+
+  auto inside_curlies = Curlies(PosNum).parse("{12}");
+  assert(inside_curlies.has_value());
+  assert(inside_curlies.value().first == 12);
+  assert(inside_curlies.value().second == "");
+
+  auto sepby_check = sepBy(Char, Character(',')).parse("");
+  assert(sepby_check.has_value());
+  assert(sepby_check.value().first.empty());
+  sepby_check = sepBy(Char, Character(',')).parse("a");
+  assert(sepby_check.has_value());
+  assert(sepby_check.value().first.size() == 1);
+  sepby_check = sepBy(Char, Character(',')).parse("a,");
+  assert(!sepby_check.has_value());
+  sepby_check = sepBy(Char, Character(',')).parse("a,b");
+  assert(sepby_check.has_value());
+  assert(sepby_check.value().first.size() == 2);
+
+  auto sepby1_check = sepBy1(Char, Character(',')).parse("");
+  assert(!sepby1_check.has_value());
+  sepby1_check = sepBy1(Char, Character(',')).parse("a");
+  assert(sepby1_check.has_value());
+  assert(sepby1_check.value().first.size() == 1);
+  assert(sepby1_check.value().second == "");
+  sepby1_check = sepBy1(Char, Character(',')).parse("a,");
+  assert(!sepby1_check.has_value());
+  sepby1_check = sepBy1(Char, Character(',')).parse("a,b");
+  assert(sepby1_check.has_value());
+  assert(sepby1_check.value().first.size() == 2);
+  assert(sepby1_check.value().second == "");
+
   std::cout << "Passed all tests\n";
 }

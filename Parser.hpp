@@ -363,4 +363,98 @@ template <typename T> Parser<size_t> skipMany1(const Parser<T> &parser) {
       }));
 }
 
+// can match any two pair of characters and the string inside that will be
+// parsed with the parser
+template <typename T>
+Parser<T> _InsideMatchingPair(const Parser<T> &parser, char opening = '(',
+                              char closing = ')') {
+  return Parser<T>(
+      [parser, opening,
+       closing](string_view str) -> std::optional<std::pair<T, string_view>> {
+        if (str.empty())
+          return std::nullopt;
+        if (str[0] != opening)
+          return std::nullopt;
+        std::vector<char> S;
+        S.push_back(opening);
+        size_t i = 1;
+        // trying to balance the opening and closing characters
+        while (!S.empty() && (i < str.size())) {
+          if (str[i] == closing && S.back() == opening)
+            S.pop_back();
+          else if (str[i] == closing)
+            return std::nullopt; // no matching pair
+          else if (str[i] == opening)
+            S.push_back(opening);
+          i++;
+        }
+        if (S.empty()) { // parens match
+                         // i is currently at one index ahead of matching paren
+          auto temp_result = parser.parse(str.substr(1, (i - 2)));
+          // shouldve parsed somehting and that shoudve consumed the entire
+          // thing inside the matching par
+          if (temp_result.has_value() && temp_result.value().second.empty()) {
+            return std::make_optional(
+                std::make_pair(temp_result.value().first, str.substr(i)));
+          }
+        }
+        return std::nullopt; // parens are not matching
+      });
+}
+
+template <typename T> Parser<T> Parens(const Parser<T> &parser) {
+  return _InsideMatchingPair(parser, '(', ')');
+}
+
+template <typename T> Parser<T> Curlies(const Parser<T> &parser) {
+  return _InsideMatchingPair(parser, '{', '}');
+}
+
+template <typename T> Parser<T> SquareBraces(const Parser<T> &parser) {
+  return _InsideMatchingPair(parser, '[', ']');
+}
+
+template <typename A, typename B>
+Parser<std::vector<A>> sepBy(const Parser<A> &separatee,
+                             const Parser<B> &separator) {
+  return Parser<std::vector<A>>(
+      // can give empty string
+      // But fails if the pattern is not right
+      // Empty string will return value while illformed wont
+      // for separator , "" will return while "," wont return and "a," wont
+      // return and "a,b" will return
+      [separatee, separator](string_view str)
+          -> std::optional<std::pair<std::vector<A>, string_view>> {
+        std::vector<A> final_res;
+        string_view ret_str = str;
+        auto first_A = separatee.parse(str);
+        if (first_A.has_value()) {
+          final_res.push_back(first_A.value().first);
+          ret_str = first_A.value().second;
+          while (true) {
+            if (ret_str.empty())
+              break;
+            auto _throw_away = separator.parse(ret_str);
+            if (!_throw_away.has_value())
+              return std::nullopt;
+            ret_str = _throw_away.value().second;
+            auto next_A = separatee.parse(ret_str);
+            if (!next_A.has_value())
+              return std::nullopt;
+            final_res.push_back(next_A.value().first);
+            ret_str = next_A.value().second;
+          }
+        }
+        return std::make_optional(std::make_pair(final_res, ret_str));
+      });
+}
+
+template <typename A, typename B>
+Parser<std::vector<A>> sepBy1(const Parser<A> &separatee,
+                              const Parser<B> &separator) {
+  return sepBy(separatee, separator).filter([](auto &&vec) {
+    return vec.size() >= 1;
+  });
+}
+
 } // namespace Parsers
