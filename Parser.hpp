@@ -182,6 +182,10 @@ template <> Parser<bool> Parser<bool>::orThrow(const char *error_msg) {
 
 namespace Parsers { // Parsers::
 
+template <typename T> Parser<T> lazy(Fn<Parser<T>(string_view)> fn) {
+  return Parser<T>([fn](string_view str) { return fn().parse(str); });
+}
+
 template <typename A, typename B>
 Parser<std::tuple<A, B>> zip(Parser<A> a, Parser<B> b) {
   return a.andThen(b);
