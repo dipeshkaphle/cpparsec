@@ -182,7 +182,7 @@ template <> Parser<bool> Parser<bool>::orThrow(const char *error_msg) {
 
 namespace Parsers { // Parsers::
 
-template <typename T> Parser<T> lazy(Fn<Parser<T>(string_view)> fn) {
+template <typename T> Parser<T> lazy(Fn<Parser<T>()> fn) {
   return Parser<T>([fn](string_view str) { return fn().parse(str); });
 }
 
