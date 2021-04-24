@@ -203,10 +203,10 @@ template <typename A> Parser<A> zipMany(Parser<A> a) { return a; }
 template <typename A, typename B, typename... T>
 auto zipMany(Parser<A> a, Parser<B> b, Parser<T>... parsers) {
   if constexpr (!is_tuple<A>::value) {
-    auto x = a.andThen(b);
+    static auto x = a.andThen(b);
     return zipMany(x, std::forward<decltype(parsers)>(parsers)...);
   } else {
-    auto x = a.andThen(b);
+    static auto x = a.andThen(b);
     return zipMany(x, std::forward<decltype(parsers)>(parsers)...);
   }
 }
@@ -220,7 +220,7 @@ template <std::size_t N, typename... T> auto zipAndGet(Parser<T>... parsers) {
                });
 }
 
-template <typename... T> auto oneOf(Parser<T>... parsers) {
+template <typename... T> auto oneOf(const Parser<T> &...parsers) {
   return (... || parsers);
 }
 
@@ -252,7 +252,7 @@ Parser<string_view> String(string_view prefix) {
       });
 }
 
-Parser<bool>
+const Parser<bool>
     End((Fn<std::optional<std::pair<bool, string_view>>(string_view)>)[](
         string_view str) {
       return std::make_optional(std::make_pair(str.empty(), str));
@@ -304,36 +304,41 @@ Parser<char> Char_excluding_many(const std::array<char, N> &chars) {
   });
 }
 
-Parser<char> Alpha = Char.filter([](char c) { return std::isalpha(c) != 0; });
+const Parser<char> Alpha =
+    Char.filter([](char c) { return std::isalpha(c) != 0; });
 
-Parser<char> Digit = Char.filter([](char c) { return std::isdigit(c) != 0; });
+const Parser<char> Digit =
+    Char.filter([](char c) { return std::isdigit(c) != 0; });
 
-Parser<char> AlphaNum = Char.filter(
+const Parser<char> AlphaNum = Char.filter(
     [](char c) { return (std::isdigit(c) != 0) || (std::isalpha(c) != 0); });
 
-Parser<char> LeftParen = Char.filter([](char c) { return c == '('; });
-Parser<char> RightParen = Char.filter([](char c) { return c == ')'; });
-Parser<char> LeftCurly = Char.filter([](char c) { return c == '{'; });
-Parser<char> RightCurly = Char.filter([](char c) { return c == '}'; });
-Parser<char> WhiteSpace =
+const Parser<char> LeftParen = Char.filter([](char c) { return c == '('; });
+const Parser<char> RightParen = Char.filter([](char c) { return c == ')'; });
+const Parser<char> LeftCurly = Char.filter([](char c) { return c == '{'; });
+const Parser<char> RightCurly = Char.filter([](char c) { return c == '}'; });
+const Parser<char> WhiteSpace =
     Char.filter([](char c) { return c == ' ' || c == '\n' || c == '\t'; });
-Parser<char> Tab = Char.filter([](char c) { return c == '\t'; });
-Parser<char> Space = Char.filter([](char c) { return c == ' '; });
-Parser<char> NewLine = Char.filter([](char c) { return c == '\n'; });
+const Parser<char> Tab = Char.filter([](char c) { return c == '\t'; });
+const Parser<char> Space = Char.filter([](char c) { return c == ' '; });
+const Parser<char> NewLine = Char.filter([](char c) { return c == '\n'; });
 
 template <typename T> Parser<T> skipPreWhitespace(const Parser<T> &p) {
-  return zipAndGet<1>(WhiteSpace.zeroOrMore(), p);
+  static const auto whitespace_zero_or_more = WhiteSpace.zeroOrMore();
+  return zipAndGet<1>(whitespace_zero_or_more, p);
 }
 template <typename T> Parser<T> skipPostWhitespace(const Parser<T> &p) {
-  return zipAndGet<0>(p, WhiteSpace.zeroOrMore());
+  static const auto whitespace_zero_or_more = WhiteSpace.zeroOrMore();
+  return zipAndGet<0>(p, whitespace_zero_or_more);
 }
 
 template <typename T> Parser<T> skipSurrWhitespace(const Parser<T> &p) {
-  return zipAndGet<1>(WhiteSpace.zeroOrMore(), p, WhiteSpace.zeroOrMore());
+  static const auto whitespace_zero_or_more = WhiteSpace.zeroOrMore();
+  return zipAndGet<1>(whitespace_zero_or_more, p, whitespace_zero_or_more);
 }
 
 //
-Parser<int> PosNum = Parser<int>(
+const Parser<size_t> PosNum = Parser<size_t>(
     ([](string_view str) -> std::optional<std::pair<int, string_view>> {
       std::optional<std::pair<std::vector<char>, string_view>> x =
           Digit.oneOrMore().parse(str);
@@ -345,7 +350,7 @@ Parser<int> PosNum = Parser<int>(
         ans.push_back(c);
       }
       return std::make_optional(
-          std::make_pair(std::stoi(ans), x.value().second));
+          std::make_pair(std::stoull(ans), x.value().second));
     }));
 //
 
@@ -428,19 +433,24 @@ Parser<std::vector<A>> sepBy(const Parser<A> &separatee,
         std::vector<A> final_res;
         string_view ret_str = str;
         auto first_A = separatee.parse(str);
+
         if (first_A.has_value()) {
           final_res.push_back(first_A.value().first);
           ret_str = first_A.value().second;
+
           while (true) {
             if (ret_str.empty())
               break;
             auto _throw_away = separator.parse(ret_str);
+
             if (!_throw_away.has_value())
               return std::nullopt;
             ret_str = _throw_away.value().second;
             auto next_A = separatee.parse(ret_str);
+
             if (!next_A.has_value())
               return std::nullopt;
+
             final_res.push_back(next_A.value().first);
             ret_str = next_A.value().second;
           }

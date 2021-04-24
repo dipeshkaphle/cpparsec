@@ -17,8 +17,10 @@ int main() {
                                 std::vector{'a', '1', '2'}, string_view(""))));
 
   auto pos_num_check = PosNum.parse("123a");
-  assert(pos_num_check ==
-         std::make_optional(std::make_pair(123, string_view("a"))));
+  assert(pos_num_check.has_value());
+  assert(pos_num_check.value() ==
+         std::make_optional(
+             std::make_pair<size_t, string_view>(123, string_view("a"))));
 
   auto lcurly_check = LeftCurly.parse("{)");
   assert(lcurly_check ==
