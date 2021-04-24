@@ -67,20 +67,30 @@ parseExpr(string_view str,
     string_view new_str = str;
     while (!new_str.empty()) {
       auto res = String(std::get<1>(x)).parse(new_str);
+
       if (res.has_value()) {
+
         auto left_sub_str = str.substr(0, str.size() - new_str.size());
         std::optional<Operation> left_op =
             parseExpr(left_sub_str, table.last(table.size() - i));
+
+        // ignore the last parse and move on
         if (!left_op.has_value()) {
           new_str.remove_prefix(1);
           continue;
         }
+
         std::optional<Operation> right_op =
             parseExpr(res.value().second, table);
+
+        // ignore the last parse and move on
         if (!right_op.has_value()) {
           new_str.remove_prefix(1);
           continue;
         }
+
+        // if say we have + currently and the right operand is also a tree with
+        // + at the top ,then we bring associativity into play
         if ((std::get<2>(x)) == right_op.value().op) {
           if (std::get<3>(x) == Assoc::Left) {
             auto tmp_left = right_op.value().left;
