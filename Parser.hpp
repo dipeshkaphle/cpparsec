@@ -252,12 +252,6 @@ Parser<string_view> String(string_view prefix) {
       });
 }
 
-const Parser<bool>
-    End((Fn<std::optional<std::pair<bool, string_view>>(string_view)>)[](
-        string_view str) {
-      return std::make_optional(std::make_pair(str.empty(), str));
-    });
-
 Parser<char> Char([](string_view str) {
   return str.empty() ? std::nullopt
                      : std::make_optional(make_pair(str[0], str.substr(1)));
@@ -322,6 +316,11 @@ const Parser<char> WhiteSpace =
 const Parser<char> Tab = Char.filter([](char c) { return c == '\t'; });
 const Parser<char> Space = Char.filter([](char c) { return c == ' '; });
 const Parser<char> NewLine = Char.filter([](char c) { return c == '\n'; });
+const Parser<bool>
+    End((Fn<std::optional<std::pair<bool, string_view>>(string_view)>)[](
+        string_view str) {
+      return std::make_optional(std::make_pair(str.empty(), str));
+    });
 
 template <typename T> Parser<T> skipPreWhitespace(const Parser<T> &p) {
   static const auto whitespace_zero_or_more = WhiteSpace.zeroOrMore();
@@ -425,7 +424,9 @@ Parser<std::vector<A>> sepBy(const Parser<A> &separatee,
   return Parser<std::vector<A>>(
       // can give empty string
       // But fails if the pattern is not right
-      // Empty string will return value while illformed wont
+      // Empty string will return value while illformed strings wont
+      //
+      //
       // for separator , "" will return while "," wont return and "a," wont
       // return and "a,b" will return
       [separatee, separator](string_view str)
