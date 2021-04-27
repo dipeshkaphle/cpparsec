@@ -12,6 +12,21 @@
 #include <tuple>
 #include <vector>
 
+#define RETURN_NULLOPT_IF_NO_VALUE(opt)                                        \
+  if (!opt.has_value())                                                        \
+    return std::nullopt;
+
+#define RETURN_OPT_IF_HAS_VALUE(opt)                                           \
+  if (opt.has_value())                                                         \
+    return opt;
+
+#define RETURN_VALUE_IF_HAS_VALUE(opt)                                         \
+  if (opt.has_value())                                                         \
+    return opt.value();
+
+#define OPTIONAL_MAP(opt, func)                                                \
+  (!opt.has_value()) ? std::nullopt : std::make_optional(func(opt.value()))
+
 using std::pair;
 using std::string_view;
 using opt_string_view = std::optional<std::string_view>;
@@ -33,9 +48,11 @@ public:
   Parser<T> operator||(const Parser<T> &other) const {
     return Parser<T>([other, this_obj = *this](string_view str) {
       auto x = this_obj.parse(str);
-      if (x.has_value()) {
-        return x;
-      }
+
+      RETURN_OPT_IF_HAS_VALUE(x);
+      // if (x.has_value()) {
+      //   return x;
+      // }
       return other.parse(str);
     });
   }
@@ -57,11 +74,15 @@ public:
               [f, match](
                   string_view str) -> std::optional<std::pair<B, string_view>> {
                 std::optional<B> x = f(match);
-                if (x.has_value()) {
-                  return std::make_pair(x.value(), str);
-                } else {
-                  return std::nullopt;
-                }
+                // if (x.has_value()) {
+                //   return std::make_pair(x.value(), str);
+                // } else {
+                //   return std::nullopt;
+                // }
+                //
+                RETURN_NULLOPT_IF_NO_VALUE(x);
+                // else this
+                return std::make_pair(x.value(), str);
               }));
     };
     return this->flatmap<B>(g);
@@ -71,14 +92,13 @@ public:
     return Parser<B>([f, this_obj = *this](string_view str)
                          -> std::optional<std::pair<B, string_view>> {
       std::optional<std::pair<T, string_view>> x = this_obj.parse(str);
-      if (not x.has_value()) {
-        return std::nullopt;
-      } else {
-        auto y = x.value().first;
-        Parser<B> p = f(y);
-        return p.parse(x.value().second);
-        // return x.value();
-      }
+
+      RETURN_NULLOPT_IF_NO_VALUE(x);
+
+      auto y = x.value().first;
+      Parser<B> p = f(y);
+      return p.parse(x.value().second);
+      // return x.value();
     });
   }
 
@@ -101,7 +121,7 @@ public:
   }
 
   // If i can make this work then god damnnnnnnn
-  template <typename A> auto andThen(Parser<A> a) const {
+  template <typename A> auto andThen(const Parser<A> &a) const {
     if constexpr (!is_tuple<T>::value) {
       return Parser<std::tuple<T, A>>(
           [this_obj = *this, a](string_view str)
@@ -118,8 +138,6 @@ public:
             return std::nullopt;
           });
     } else {
-      // std::cout << "TUPLEEEEE:" << num_of_template_params<T>::size <<
-      // std::endl;
       return Parser<decltype(
           std::tuple_cat(std::declval<T>(), std::declval<std::tuple<A>>()))>{
           [this_obj = *this, a](string_view str)
@@ -147,11 +165,10 @@ public:
     return Parser<T>((Fn<std::optional<pair<T, string_view>>(string_view)>)
                          [ error_msg, this_obj = *this ](string_view str) {
                            auto res = this_obj.parse(str);
-                           if (res.has_value()) {
-                             return res;
-                           } else {
-                             throw std::runtime_error(error_msg);
-                           }
+
+                           RETURN_OPT_IF_HAS_VALUE(res);
+                           // else throw error
+                           throw std::runtime_error(error_msg);
                          });
   }
 
@@ -172,6 +189,7 @@ template <> Parser<char>::Parser(const char &c) {
 template <> Parser<bool> Parser<bool>::orThrow(const char *error_msg) {
   return Parser<bool>([*this, error_msg](string_view str) {
     auto res = this->parse(str);
+    // not checking for nullopt cuz bool shouldn't return nullopt
     if (res.value().first) {
       return res;
     } else {
@@ -198,20 +216,20 @@ Parser<std::tuple<A, B, C>> zip3(Parser<A> a, Parser<B> b, Parser<C> c) {
 
 // sexy stuff
 // power of templates wow
-template <typename A> Parser<A> zipMany(Parser<A> a) { return a; }
+template <typename A> Parser<A> zipMany(const Parser<A> &a) { return a; }
 
 template <typename A, typename B, typename... T>
-auto zipMany(Parser<A> a, Parser<B> b, Parser<T>... parsers) {
+auto zipMany(const Parser<A> &a, const Parser<B> &b,
+             const Parser<T> &...parsers) {
   if constexpr (!is_tuple<A>::value) {
-    static auto x = a.andThen(b);
-    return zipMany(x, std::forward<decltype(parsers)>(parsers)...);
+    return zipMany(a.andThen(b), std::forward<decltype(parsers)>(parsers)...);
   } else {
-    static auto x = a.andThen(b);
-    return zipMany(x, std::forward<decltype(parsers)>(parsers)...);
+    return zipMany(a.andThen(b), std::forward<decltype(parsers)>(parsers)...);
   }
 }
 
-template <std::size_t N, typename... T> auto zipAndGet(Parser<T>... parsers) {
+template <std::size_t N, typename... T>
+auto zipAndGet(const Parser<T> &...parsers) {
   return zipMany(std::forward<decltype(parsers)>(parsers)...)
       .map((std::function<std::optional<typename nth_type<N, T...>::Type>(
                 std::tuple<T...>)>)[](const std::tuple<T...> &x)
@@ -444,13 +462,12 @@ Parser<std::vector<A>> sepBy(const Parser<A> &separatee,
               break;
             auto _throw_away = separator.parse(ret_str);
 
-            if (!_throw_away.has_value())
-              return std::nullopt;
+            RETURN_NULLOPT_IF_NO_VALUE(_throw_away);
+
             ret_str = _throw_away.value().second;
             auto next_A = separatee.parse(ret_str);
 
-            if (!next_A.has_value())
-              return std::nullopt;
+            RETURN_NULLOPT_IF_NO_VALUE(next_A);
 
             final_res.push_back(next_A.value().first);
             ret_str = next_A.value().second;
