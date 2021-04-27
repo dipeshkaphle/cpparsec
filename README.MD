@@ -128,6 +128,7 @@ A parser combinator written in C++, inspired by
     parser that parses any characters except those in the given array.
 
 - Methods for Parser<T>
+
   - `filter(Fn)`
   - `map(Fn)` : Returns a new parser of type B that applies the function
     Fn(which takes in T and returns B) to the parsed output of `this` parser.
@@ -149,3 +150,11 @@ A parser combinator written in C++, inspired by
   - `orThrow(const char *error_message)` : Instead of return std::nullopt, it
     throws exception. When `this` is of type Parser<bool>, then it throws on
     returning false.
+
+- Usage Instructions:
+  - pip install conan (if you dont have it installed already)
+  - mkdir build
+  - cd build
+  - conan install ..
+  - cmake ..
+  - make tests
