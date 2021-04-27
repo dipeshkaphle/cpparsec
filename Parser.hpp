@@ -205,26 +205,25 @@ template <typename T> Parser<T> lazy(Fn<Parser<T>()> fn) {
 }
 
 template <typename A, typename B>
-Parser<std::tuple<A, B>> zip(Parser<A> a, Parser<B> b) {
+Parser<std::tuple<A, B>> zip(const Parser<A> &a, const Parser<B> &b) {
   return a.andThen(b);
 }
 
 template <typename A, typename B, typename C>
-Parser<std::tuple<A, B, C>> zip3(Parser<A> a, Parser<B> b, Parser<C> c) {
+Parser<std::tuple<A, B, C>> zip3(const Parser<A> &a, const Parser<B> &b,
+                                 const Parser<C> &c) {
   return a.andThen(b).andThen(c);
 }
 
-// sexy stuff
-// power of templates wow
 template <typename A> Parser<A> zipMany(const Parser<A> &a) { return a; }
 
 template <typename A, typename B, typename... T>
 auto zipMany(const Parser<A> &a, const Parser<B> &b,
              const Parser<T> &...parsers) {
   if constexpr (!is_tuple<A>::value) {
-    return zipMany(a.andThen(b), std::forward<decltype(parsers)>(parsers)...);
+    return zipMany(a.andThen(b), parsers...);
   } else {
-    return zipMany(a.andThen(b), std::forward<decltype(parsers)>(parsers)...);
+    return zipMany(a.andThen(b), parsers...);
   }
 }
 
