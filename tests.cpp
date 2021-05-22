@@ -1,8 +1,8 @@
 #define CATCH_CONFIG_MAIN
+#include <catch2/catch.hpp>
 
 #include "Parser.hpp"
 #include <cassert>
-#include <catch2/catch.hpp>
 #include <iostream>
 
 using namespace Parsers;
@@ -138,8 +138,8 @@ TEST_CASE("Character Parsers") {
   includes1 = Characters(std::array{'a', 'b', 'c'}).parse("db");
   REQUIRE(!includes1.has_value());
 
-  // auto error = Character('a').orThrow("Couldnt parse a").parse("bc"); //
-  // throws
+  REQUIRE_THROWS(Character('a').orThrow("Couldnt parse a").parse("bc"));
+
   auto error = Character('a').orThrow("Couldnt parse a").parse("abc");
   REQUIRE(error.has_value());
 }

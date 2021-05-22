@@ -59,54 +59,57 @@ Parser<Operation> num([](string_view str) {
 
 // prototype of what could be done
 // I hope to make this possible just on the basis of the table provided
+template <typename T>
 std::optional<Operation>
 parseExpr(string_view str,
-          std::span<std::tuple<ExprType, std::string, Op, Assoc>> table) {
+          std::span<std::tuple<ExprType, std::string, Op, Assoc>> table,
+          const Parser<T> &base_parser) {
   unsigned i = 1;
   for (auto &x : table) {
     string_view new_str = str;
-    while (!new_str.empty()) {
-      auto res = String(std::get<1>(x)).parse(new_str);
+    auto string_parser = String(std::get<1>(x));
 
-      if (res.has_value()) {
-
-        auto left_sub_str = str.substr(0, str.size() - new_str.size());
-        std::optional<Operation> left_op =
-            parseExpr(left_sub_str, table.last(table.size() - i));
-
-        // ignore the last parse and move on
-        if (!left_op.has_value()) {
-          new_str.remove_prefix(1);
-          continue;
-        }
-
-        std::optional<Operation> right_op =
-            parseExpr(res.value().second, table);
-
-        // ignore the last parse and move on
-        if (!right_op.has_value()) {
-          new_str.remove_prefix(1);
-          continue;
-        }
-
-        // if say we have + currently and the right operand is also a tree with
-        // + at the top ,then we bring associativity into play
-        if ((std::get<2>(x)) == right_op.value().op) {
-          if (std::get<3>(x) == Assoc::Left) {
-            auto tmp_left = right_op.value().left;
-            right_op.value().left = std::make_shared<Operation>(
-                Operation(std::get<2>(x), 0, left_op.value(), *tmp_left));
-            return right_op;
-          }
-        }
-        return std::make_optional(
-            Operation(std::get<2>(x), 0, left_op.value(), right_op.value()));
+    while (true) {
+      auto it = new_str.find(std::get<1>(x));
+      if (it == std::string::npos)
+        break;
+      // remove all the elements before the matched part
+      new_str.remove_prefix(it);
+      auto res = string_parser.parse(new_str);
+      auto left_sub_str = str.substr(0, str.size() - new_str.size());
+      std::optional<Operation> left_op =
+          parseExpr(left_sub_str, table.last(table.size() - 1), base_parser);
+      /// if no valid thing in left parse, ignore and move on
+      if (!left_op.has_value()) {
+        new_str.remove_prefix(1);
+        continue;
       }
-      new_str.remove_prefix(1);
+
+      std::optional<Operation> right_op =
+          parseExpr(res.value().second, table, base_parser);
+
+      // ignore the last parse and move on
+      if (!right_op.has_value()) {
+        new_str.remove_prefix(1);
+        continue;
+      }
+
+      // if say we have + currently and the right operand is also a tree with
+      // + at the top ,then we bring associativity into play
+      if ((std::get<2>(x)) == right_op.value().op) {
+        if (std::get<3>(x) == Assoc::Left) {
+          auto tmp_left = right_op.value().left;
+          right_op.value().left = std::make_shared<Operation>(
+              Operation(std::get<2>(x), 0, left_op.value(), *tmp_left));
+          return right_op;
+        }
+      }
+      return std::make_optional(
+          Operation(std::get<2>(x), 0, left_op.value(), right_op.value()));
     }
     i++;
   }
-  return Operation(num.parse(str).value().first);
+  return Operation(base_parser.parse(str).value().first);
 }
 
 int main() {
@@ -117,7 +120,7 @@ int main() {
       std::make_tuple(ExprType::INFIX, "=", Op::ASSIGN, Assoc::Right));
   table.push_back(std::make_tuple(ExprType::INFIX, "+", Op::ADD, Assoc::Left));
   table.push_back(std::make_tuple(ExprType::INFIX, "*", Op::MUL, Assoc::Left));
-  std::optional<Operation> operation = parseExpr("2=1+2*3+4*10", table);
+  std::optional<Operation> operation = parseExpr("2=1+2*3+4*10", table, num);
   operation.value().print_pre(&(operation.value()));
   std::cout << "\n";
   return 0;
