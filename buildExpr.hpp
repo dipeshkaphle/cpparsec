@@ -1,8 +1,8 @@
 #ifndef BUILDEXPR
 #define BUILDEXPR
 
-#include "ExprClasses.hpp"
 #include "Parser.hpp"
+#include "buildExprClassesUtils.hpp"
 
 #include <cassert>
 #include <functional>
