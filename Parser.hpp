@@ -1,4 +1,5 @@
-#pragma once
+#ifndef PARSERHPP
+#define PARSERHPP
 
 #include "util.cpp"
 
@@ -485,3 +486,4 @@ Parser<std::vector<A>> sepBy1(const Parser<A> &separatee,
 }
 
 } // namespace Parsers
+#endif
