@@ -1,5 +1,6 @@
 #ifndef EXPRCLASSESHPP
 #define EXPRCLASSESHPP
+#include <fstream>
 #include <iostream>
 #include <memory>
 #include <string>
@@ -103,10 +104,6 @@ PostfixOperation<T> &PostfixOperation<T>::operator=(PostfixOperation<T> &&x) {
   return *this;
 }
 
-// template <typename T>
-// template <typename U>
-// Expr<T>::Expr(U t) : tree(std::move(t)) {}
-
 template <typename T> Expr<T>::Expr(Expr<T> &&e) { *this = std::move(e); }
 
 template <typename T> Expr<T> &Expr<T>::operator=(Expr<T> &&e) {
@@ -183,5 +180,31 @@ template <typename T> struct T_of_Expr<PostfixOperation<T>> { using type = T; };
   throw std::runtime_error("Not an infix operation. Doesnt have lhs and rhs");
   return InfixOperation<V>();
 };
+
+template <typename T>
+std::ostream &operator<<(std::ostream &out, const Expr<T> &expr) {
+  std::visit(
+      [&](const auto &x) {
+        using U = std::decay_t<decltype(x)>;
+        using V = typename T_of_Expr<U>::type;
+        out << "( ";
+        if constexpr (std::is_same_v<U, PrefixOperation<V>>) {
+          out << x.type << ' ';
+          out << *(x.a.get());
+        } else if constexpr (std::is_same_v<U, PostfixOperation<V>>) {
+          out << x.type << ' ';
+          out << *(x.a.get());
+        } else if constexpr (std::is_same_v<U, InfixOperation<V>>) {
+          out << x.type << ' ';
+          out << *(x.lhs.get()) << ' ';
+          out << *(x.rhs.get());
+        } else {
+          out << x;
+        }
+        out << " )";
+      },
+      expr.tree);
+  return out;
+}
 
 #endif
