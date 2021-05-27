@@ -369,6 +369,19 @@ const Parser<size_t> PosNum = Parser<size_t>(
       return std::make_optional(
           std::make_pair(std::stoull(ans), x.value().second));
     }));
+const Parser<long long> Num = Parser<long long>(
+    [](string_view str) -> std::optional<std::pair<long long, string_view>> {
+      auto negative_sign = Character('-').parse(str);
+      auto remaining_str =
+          negative_sign.has_value() ? negative_sign->second : str;
+      return PosNum
+          .map<long long>([&](size_t n) -> std::optional<long long> {
+            long long x = n;
+            return negative_sign.has_value() ? std::make_optional(-x)
+                                             : std::make_optional(x);
+          })
+          .parse(remaining_str);
+    });
 //
 
 template <typename T> Parser<size_t> skipMany(const Parser<T> &parser) {

@@ -40,13 +40,29 @@ Parser<Atom>
               .parse(str);
         }));
 
-int main() {
+void parseArithmeticExpr() {
   std::vector<ExprType> table{
       INFIX("=", "Assign", Assoc::Right), INFIX("+", "Add", Assoc::Left),
       INFIX("*", "Mul", Assoc::Left), PREFIX("++", "PreIncr", Assoc::Right)};
-  auto expr = buildExpr(table, atom_parser, "x=(1)+2*3+4*10");
-  // auto expr = buildExpr(table, num, "2+1*6");
-  // auto expr = buildExpr(table, num, "++2");
-  std::cout << "OK\n";
+  std::string input("x=(1)+2*3+4*10");
+  std::cout << "Tree for arithmetic expression parsing of " << input << "\n";
+  auto expr = buildExpr(table, atom_parser, input);
   std::cout << expr.value() << '\n';
+}
+
+void parseRegexExpr() {
+  std::vector<ExprType> table{INFIX("|", "Alternate", Assoc::Left),
+                              INFIX(".", "Concat", Assoc::Left),
+                              POSTFIX("*", "Kleene", Assoc::Right)};
+  std::string input("a*.b*|c*|d*");
+  std::cout << "Tree for regex parsing of " << input << "\n";
+  auto expr = buildExpr(table, Alpha, input);
+  if (expr.has_value())
+    std::cout << expr.value() << '\n';
+}
+
+int main() {
+  parseArithmeticExpr();
+  std::cout << '\n';
+  parseRegexExpr();
 }

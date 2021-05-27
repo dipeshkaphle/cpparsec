@@ -23,11 +23,15 @@ TEST_CASE("OneOrMore") {
           std::make_pair(std::vector{'a', '1', '2'}, string_view("")));
 }
 
-TEST_CASE("Positive Number") {
+TEST_CASE("Number") {
   auto pos_num_check = PosNum.parse("123a");
   REQUIRE(pos_num_check.has_value());
   REQUIRE(pos_num_check.value() ==
           std::make_pair<size_t, string_view>(123, string_view("a")));
+  auto negative = Num.parse("-123b");
+  REQUIRE(negative.has_value());
+  REQUIRE(negative.value() ==
+          std::make_pair<long long, string_view>(-123, string_view("b")));
 }
 
 TEST_CASE("Brackets Check") {
