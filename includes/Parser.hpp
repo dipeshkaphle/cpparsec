@@ -1,7 +1,7 @@
 #ifndef PARSERHPP
 #define PARSERHPP
 
-#include "util.cpp"
+#include "util.hpp"
 
 #include <algorithm>
 #include <functional>
