@@ -49,10 +49,6 @@ template <typename T> struct Expr {
   template <typename U> Expr(U t) : tree(std::move(t)) {}
   Expr(Expr &&e);
   Expr &operator=(Expr &&e);
-  template <typename U, typename... Args>
-  static Expr<T> construct(Args &&...args) {
-    return Expr<T>(std::move(U(std::forward<Args>(args)...)));
-  }
 };
 
 template <typename T>

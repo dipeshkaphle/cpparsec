@@ -47,7 +47,7 @@ void parseArithmeticExpr() {
   std::string input("x=(1)+2*3+4*10");
   std::cout << "Tree for arithmetic expression parsing of " << input << "\n";
   auto expr = buildExpr(table, atom_parser, input);
-  std::cout << expr.value() << '\n';
+  std::cout << expr.value().first << '\n';
 }
 
 void parseRegexExpr() {
@@ -56,9 +56,10 @@ void parseRegexExpr() {
                               POSTFIX("*", "Kleene", Assoc::Right)};
   std::string input("a*.b*|c*|d*");
   std::cout << "Tree for regex parsing of " << input << "\n";
-  auto expr = buildExpr(table, Alpha, input);
+  auto expr_parser = buildExpressionParser(table, Alpha);
+  auto expr = expr_parser.parse(input);
   if (expr.has_value())
-    std::cout << expr.value() << '\n';
+    std::cout << expr.value().first << '\n';
 }
 
 int main() {
