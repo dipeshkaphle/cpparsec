@@ -48,9 +48,6 @@ public:
       auto x = this_obj.parse(str);
 
       RETURN_OPT_IF_HAS_VALUE(x);
-      // if (x.has_value()) {
-      //   return x;
-      // }
       return other.parse(str);
     });
   }
@@ -119,45 +116,45 @@ public:
     });
   }
 
-  // If i can make this work then god damnnnnnnn
+  template <typename A>
+  auto andThen(const Parser<A> &a) const requires is_tuple<T>::value {
+    return Parser<decltype(
+        std::tuple_cat(std::declval<T>(), std::declval<std::tuple<A>>()))>{
+        [this_obj = *this, a](string_view str)
+            -> std::optional<std::pair<decltype(std::tuple_cat(
+                                           std::declval<T>(),
+                                           std::declval<std::tuple<A>>())),
+                                       string_view>> {
+          std::optional<pair<T, string_view>> res = this_obj.parse(str);
+          if (res.has_value()) {
+            std::optional<pair<A, string_view>> res2 =
+                a.parse(res.value().second);
+            if (res2.has_value()) {
+              auto tup1 = res.value().first;
+              std::tuple<A> tup2(res2.value().first);
+              return std::make_optional(std::make_pair(
+                  std::tuple_cat(tup1, tup2), res2.value().second));
+            }
+          }
+          return std::nullopt;
+        }};
+  }
+
   template <typename A> auto andThen(const Parser<A> &a) const {
-    if constexpr (!is_tuple<T>::value) {
-      return Parser<std::tuple<T, A>>(
-          [this_obj = *this, a](string_view str)
-              -> std::optional<std::pair<std::tuple<T, A>, string_view>> {
-            std::optional<pair<T, string_view>> x = this_obj.parse(str);
-            if (x.has_value()) {
-              std::optional<pair<A, string_view>> y = a.parse(x.value().second);
-              if (y.has_value()) {
-                return std::make_optional(std::make_pair(
-                    std::make_tuple(x.value().first, y.value().first),
-                    y.value().second));
-              }
+    return Parser<std::tuple<T, A>>(
+        [this_obj = *this, a](string_view str)
+            -> std::optional<std::pair<std::tuple<T, A>, string_view>> {
+          std::optional<pair<T, string_view>> x = this_obj.parse(str);
+          if (x.has_value()) {
+            std::optional<pair<A, string_view>> y = a.parse(x.value().second);
+            if (y.has_value()) {
+              return std::make_optional(std::make_pair(
+                  std::make_tuple(x.value().first, y.value().first),
+                  y.value().second));
             }
-            return std::nullopt;
-          });
-    } else {
-      return Parser<decltype(
-          std::tuple_cat(std::declval<T>(), std::declval<std::tuple<A>>()))>{
-          [this_obj = *this, a](string_view str)
-              -> std::optional<std::pair<decltype(std::tuple_cat(
-                                             std::declval<T>(),
-                                             std::declval<std::tuple<A>>())),
-                                         string_view>> {
-            std::optional<pair<T, string_view>> res = this_obj.parse(str);
-            if (res.has_value()) {
-              std::optional<pair<A, string_view>> res2 =
-                  a.parse(res.value().second);
-              if (res2.has_value()) {
-                auto tup1 = res.value().first;
-                std::tuple<A> tup2(res2.value().first);
-                return std::make_optional(std::make_pair(
-                    std::tuple_cat(tup1, tup2), res2.value().second));
-              }
-            }
-            return std::nullopt;
-          }};
-    }
+          }
+          return std::nullopt;
+        });
   }
 
   Parser<T> orThrow(const char *error_msg) {
