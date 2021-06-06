@@ -5,7 +5,8 @@
 #include <cassert>
 #include <iostream>
 
-using namespace Parsers;
+using namespace cpparsec;
+using namespace cpparsec::Parsers;
 
 TEST_CASE("Digit Parser") {
   auto digit_check = Digit.parse("12");

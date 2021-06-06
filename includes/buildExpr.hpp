@@ -12,7 +12,8 @@
 
 using namespace std::placeholders;
 
-using namespace Parsers;
+using namespace cpparsec;
+using namespace cpparsec::Parsers;
 
 template <typename T>
 std::optional<std::pair<Expr<T>, string_view>>

@@ -5,7 +5,8 @@
 #include <string>
 #include <variant>
 
-using namespace Parsers;
+using namespace cpparsec;
+using namespace cpparsec::Parsers;
 using Atom = std::variant<std::string, int>;
 
 std::ostream &operator<<(std::ostream &out, const Atom &x) {

@@ -33,6 +33,7 @@ using std::string_view;
 using opt_string_view = std::optional<std::string_view>;
 template <typename T> using Fn = std::function<T>;
 
+namespace cpparsec {
 template <typename T> class Parser {
 public:
   std::function<std::optional<pair<T, string_view>>(string_view)> parse;
@@ -71,9 +72,9 @@ public:
                   string_view str) -> std::optional<std::pair<B, string_view>> {
                 std::optional<B> x = f(match);
                 // if (x.has_value()) {
-                //   return std::make_pair(x.value(), str);
+                //	 return std::make_pair(x.value(), str);
                 // } else {
-                //   return std::nullopt;
+                //	 return std::nullopt;
                 // }
                 //
                 RETURN_NULLOPT_IF_NO_VALUE(x);
@@ -419,7 +420,7 @@ Parser<T> _InsideMatchingPair(const Parser<T> &parser, char opening = '(',
           i++;
         }
         if (S.empty()) { // parens match
-                         // i is currently at one index ahead of matching paren
+          // i is currently at one index ahead of matching paren
           auto temp_result = parser.parse(str.substr(1, (i - 2)));
           // shouldve parsed somehting and that shoudve consumed the entire
           // thing inside the matching par
@@ -494,4 +495,6 @@ Parser<std::vector<A>> sepBy1(const Parser<A> &separatee,
 }
 
 } // namespace Parsers
+} // namespace cpparsec
+
 #endif
