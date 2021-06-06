@@ -37,15 +37,12 @@ template <typename T> class Parser {
 public:
   std::function<std::optional<pair<T, string_view>>(string_view)> parse;
   Parser() = default;
-  Parser(std::function<std::optional<pair<T, string_view>>(string_view)> f) {
-    parse = f;
-  }
+  Parser(std::function<std::optional<pair<T, string_view>>(string_view)> f)
+      : parse(f) {}
   Parser(const T &val) = delete;
-  Parser<T>(const Parser<T> &other) { this->parse = other.parse; }
-  Parser<T> operator=(const Parser<T> &other) {
-    this->parse = other.parse;
-    return *this;
-  }
+  Parser<T>(const Parser<T> &other) = default;
+  Parser<T> &operator=(Parser<T> &&other) = default;
+  Parser<T> &operator=(const Parser<T> &other) = default;
   Parser<T> operator||(const Parser<T> &other) const {
     return Parser<T>([other, this_obj = *this](string_view str) {
       auto x = this_obj.parse(str);
@@ -68,11 +65,12 @@ public:
 
   template <typename B>
   Parser<B> map(std::function<std::optional<B>(T)> f) const {
-    std::function<Parser<B>(T)> g = [f](const T &match) -> Parser<B> {
+    std::function<Parser<B>(T)> g([f = std::move(f)](
+                                      const T &match) -> Parser<B> {
       return Parser<B>(
           std::function<std::optional<pair<B, string_view>>(string_view)>(
               // f and match are the captures
-              [f, match](
+              [f = std::move(f), match](
                   string_view str) -> std::optional<std::pair<B, string_view>> {
                 std::optional<B> x = f(match);
                 // if (x.has_value()) {
@@ -83,14 +81,14 @@ public:
                 //
                 RETURN_NULLOPT_IF_NO_VALUE(x);
                 // else this
-                return std::make_pair(x.value(), str);
+                return std::make_pair(std::move(x.value()), str);
               }));
-    };
-    return this->flatmap<B>(g);
+    });
+    return this->flatmap<B>(std::move(g));
   }
 
   template <typename B> Parser<B> flatmap(std::function<Parser<B>(T)> f) const {
-    return Parser<B>([f, this_obj = *this](string_view str)
+    return Parser<B>([f = std::move(f), this_obj = *this](string_view str)
                          -> std::optional<std::pair<B, string_view>> {
       std::optional<std::pair<T, string_view>> x = this_obj.parse(str);
 
