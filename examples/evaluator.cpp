@@ -1,27 +1,19 @@
 #include "Parser.hpp"
-#include "buildExpr.hpp"
-#include "buildExprClassesUtils.hpp"
-
 #include <string>
 #include <variant>
 
-using namespace cpparsec;
-using namespace cpparsec::Parsers;
 using Atom = std::variant<std::string, int>;
 
-std::ostream &operator<<(std::ostream &out, const Atom &x) {
-  std::visit(
-      [&](const auto &y) {
-        using T = std::decay_t<decltype(y)>;
-        if constexpr (std::is_same_v<T, std::string>) {
-          out << y;
-        } else {
-          out << y;
-        }
-      },
-      x);
+std::ostream &operator<<(std::ostream &out,
+                         const std::variant<std::string, int> &x) {
+  std::visit([&out](auto &&y) { out << y; }, x);
   return out;
 }
+
+#include "buildExpr.hpp"
+
+using namespace cpparsec;
+using namespace cpparsec::Parsers;
 
 Parser<Atom>
     atom_parser(Fn<std::optional<pair<Atom, string_view>>(string_view)>(
@@ -137,8 +129,8 @@ void parseArithmeticExpr(const std::string &input) {
     std::cout << "Invalid parse\n";
     return;
   }
-  std::cout << expr.value().first << '\n';
-  std::cout << expr.value().second << '\n';
+  std::cout << expr->first << '\n';
+  std::cout << expr->second << '\n';
   std::optional<int> eval = evaluate(expr.value().first);
   if (eval.has_value()) {
     std::cout << eval.value() << '\n';

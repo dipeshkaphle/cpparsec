@@ -135,7 +135,7 @@ Parser<Expr<T>> buildExpressionParser(std::span<ExprType> table,
                                       const Parser<T> &base_parser) {
   using RetType = std::optional<std::pair<Expr<T>, string_view>>;
   return Parser<Expr<T>>(Fn<RetType(string_view)>(
-      [&](string_view str) { return buildExpr(table, base_parser, str); }));
+      [=](string_view str) { return buildExpr(table, base_parser, str); }));
 }
 
 #endif

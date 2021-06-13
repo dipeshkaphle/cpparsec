@@ -177,30 +177,39 @@ template <typename T> struct T_of_Expr<PostfixOperation<T>> { using type = T; };
   return InfixOperation<V>();
 };
 
-template <typename T>
+template <typename T> concept Printable = requires(T x) {
+  { std::cout << x }
+  ->std::same_as<std::ostream &>;
+};
+
+template <Printable T>
 std::ostream &operator<<(std::ostream &out, const Expr<T> &expr) {
+  out << "( ";
   std::visit(
-      [&](const auto &x) {
+      [&](auto &&x) {
         using U = std::decay_t<decltype(x)>;
-        using V = typename T_of_Expr<U>::type;
-        out << "( ";
-        if constexpr (std::is_same_v<U, PrefixOperation<V>>) {
+        // using V = typename T_of_Expr<U>::type;
+        if constexpr (std::is_same_v<U, PrefixOperation<T>>) {
           out << x.type << ' ';
           out << *(x.a.get());
-        } else if constexpr (std::is_same_v<U, PostfixOperation<V>>) {
+        } else if constexpr (std::is_same_v<U, PostfixOperation<T>>) {
           out << x.type << ' ';
           out << *(x.a.get());
-        } else if constexpr (std::is_same_v<U, InfixOperation<V>>) {
+        } else if constexpr (std::is_same_v<U, InfixOperation<T>>) {
           out << x.type << ' ';
           out << *(x.lhs.get()) << ' ';
           out << *(x.rhs.get());
         } else {
           out << x;
         }
-        out << " )";
       },
       expr.tree);
+  out << " )";
   return out;
+}
+
+template <typename T> void print_expr(const Expr<T> &expr) {
+  std::cout << expr << '\n';
 }
 
 #endif

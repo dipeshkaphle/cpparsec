@@ -152,9 +152,18 @@ A parser combinator written in C++, inspired by
     returning false.
 
 - Usage Instructions:
+
   - pip install conan (if you dont have it installed already)
   - mkdir build
   - cd build
+
+  > If you want to build tests
+
   - conan install ..
-  - cmake ..
+  - cmake -DBUILD_PROJECT=tests ..
   - make tests
+
+  > For no tests
+
+  - cmake ..
+  - make <binary_name>

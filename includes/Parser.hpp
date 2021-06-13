@@ -41,7 +41,7 @@ public:
   Parser(std::function<std::optional<pair<T, string_view>>(string_view)> f)
       : parse(f) {}
   Parser(const T &val) = delete;
-  Parser<T>(const Parser<T> &other) = default;
+  Parser(const Parser<T> &other) = default;
   Parser<T> &operator=(Parser<T> &&other) = default;
   Parser<T> &operator=(const Parser<T> &other) = default;
   Parser<T> operator||(const Parser<T> &other) const {
