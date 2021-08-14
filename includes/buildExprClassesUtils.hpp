@@ -177,9 +177,9 @@ template <typename T> struct T_of_Expr<PostfixOperation<T>> { using type = T; };
   return InfixOperation<V>();
 };
 
-template <typename T> concept Printable = requires(T x) {
-  { std::cout << x }
-  ->std::same_as<std::ostream &>;
+template <typename T>
+concept Printable = requires(T x) {
+  { std::cout << x } -> std::same_as<std::ostream &>;
 };
 
 template <Printable T>

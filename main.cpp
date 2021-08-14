@@ -1,14 +1,7 @@
-#include "Parser.hpp"
-#include "buildExpr.hpp"
-#include "buildExprClassesUtils.hpp"
-
 #include <cassert>
 #include <iostream>
 #include <memory>
 #include <variant>
-
-using namespace cpparsec;
-using namespace cpparsec::Parsers;
 
 using Atom = std::variant<std::string, int>;
 
@@ -25,6 +18,12 @@ std::ostream &operator<<(std::ostream &out, const Atom &x) {
       x);
   return out;
 }
+
+#include <Parser.hpp>
+#include <buildExpr.hpp>
+#include <buildExprClassesUtils.hpp>
+using namespace cpparsec;
+using namespace cpparsec::Parsers;
 
 Parser<Atom>
     atom_parser(Fn<std::optional<pair<Atom, string_view>>(string_view)>(
